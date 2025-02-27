@@ -2,12 +2,14 @@ package com.openclassrooms.tourguide.service;
 
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.tracker.Tracker;
+import com.openclassrooms.tourguide.user.AttractionsDTO;
 import com.openclassrooms.tourguide.user.User;
 import com.openclassrooms.tourguide.user.UserReward;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -26,7 +29,7 @@ import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
 import gpsUtil.location.Location;
 import gpsUtil.location.VisitedLocation;
-
+import rewardCentral.RewardCentral;
 import tripPricer.Provider;
 import tripPricer.TripPricer;
 
@@ -59,7 +62,7 @@ public class TourGuideService {
 		return user.getUserRewards();
 	}
 
-	public VisitedLocation getUserLocation(User user) {
+	public VisitedLocation getUserLocation(User user) throws InterruptedException, ExecutionException {
 		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
 				: trackUserLocation(user);
 		return visitedLocation;
@@ -95,14 +98,25 @@ public class TourGuideService {
 		return visitedLocation;
 	}
 
-	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
-		List<Attraction> nearbyAttractions = new ArrayList<>();
+	public List<AttractionsDTO> getNearByAttractions(VisitedLocation visitedLocation) {
+		List<AttractionsDTO> nearbyAttractions = new ArrayList<>();
+		RewardCentral rewardCentral = new RewardCentral();
+		
 		for (Attraction attraction : gpsUtil.getAttractions()) {
-			if (rewardsService.isWithinAttractionProximity(attraction, visitedLocation.location)) {
-				nearbyAttractions.add(attraction);
-			}
-		}
+			AttractionsDTO attractionDTO = new AttractionsDTO();
 
+			attractionDTO.setName(attraction.attractionName);
+			attractionDTO.setAttractionLocation(attraction);
+			attractionDTO.setUserLocation(visitedLocation.location);
+			attractionDTO.setDistance(rewardsService.getDistance(attraction, visitedLocation.location));
+			attractionDTO.setRewardPoints(rewardCentral.getAttractionRewardPoints(attraction.attractionId, visitedLocation.userId));
+
+			nearbyAttractions.add(attractionDTO);
+		}
+		
+		nearbyAttractions.sort(Comparator.comparing(AttractionsDTO::getDistance));
+		nearbyAttractions = nearbyAttractions.subList(0, 5);
+		
 		return nearbyAttractions;
 	}
 
