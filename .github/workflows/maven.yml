@@ -32,7 +32,7 @@ jobs:
         cache: maven
 
     - name: install gpdUtil, rewardCentral and tripPricer
-      run:
+      run: |
         mvn clean
         mvn install:install-file -Dfile=libs/gpsUtil.jar -DgroupId=gpsUtil -DartifactId=gpsUtil -Dversion=1.0.0 -Dpackaging=jar --file **/pom.xml
         mvn install:install-file -Dfile=libs/RewardCentral.jar -DgroupId=rewardCentral -DartifactId=rewardCentral -Dversion=1.0.0 -Dpackaging=jar --file **/pom.xml
