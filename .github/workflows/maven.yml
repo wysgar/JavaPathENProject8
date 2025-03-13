@@ -33,6 +33,14 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
+    - name: Cache Maven dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          maven-${{ runner.os }}-
+
     - name: install gpdUtil, rewardCentral and tripPricer
       working-directory: TourGuide
       run: |
